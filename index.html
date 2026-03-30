@@ -1,11 +1,732 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Calculateur de Pouvoir d'Achat Immobilier - IMMOSALES Madagascar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .tab-active { border-bottom: 3px solid #2563eb; color: #2563eb; }
+        .disabled-field { opacity: 0.5; pointer-events: none; }
+        #result-panel::-webkit-scrollbar { width: 6px; }
+        #result-panel::-webkit-scrollbar-track { background: #0f172a; }
+        #result-panel::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    </style>
 </head>
-<body>
-    <h1>Hello, World!</h1>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4">
+
+    <div class="max-w-7xl w-full bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row border border-slate-200 h-[90vh] md:h-[900px]">
+        
+        <!-- Section Formulaire -->
+        <div class="p-8 md:w-5/12 bg-white overflow-y-auto">
+            <h2 class="text-2xl font-bold text-slate-800 mb-1">Conseiller Immobilier Pro</h2>
+            <p class="text-slate-500 text-sm mb-6">Simulation complète de pouvoir d'achat immobilier</p>
+            
+            <!-- Sélection Mode de Paiement -->
+            <div class="space-y-1 mb-6">
+                <label class="block text-sm font-bold text-slate-700 mb-3">Mode de Paiement</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="setPaymentMode('credit')" class="payment-mode-btn bg-blue-600 text-white py-2 px-3 rounded-lg text-xs font-bold transition-all" id="btn-credit">Crédit Bancaire</button>
+                    <button onclick="setPaymentMode('location')" class="payment-mode-btn bg-slate-300 text-slate-700 py-2 px-3 rounded-lg text-xs font-bold transition-all" id="btn-location">Location-Vente</button>
+                    <button onclick="setPaymentMode('vefa')" class="payment-mode-btn bg-slate-300 text-slate-700 py-2 px-3 rounded-lg text-xs font-bold transition-all" id="btn-vefa">VEFA (40-30-30)</button>
+                    <button onclick="setPaymentMode('cash')" class="payment-mode-btn bg-slate-300 text-slate-700 py-2 px-3 rounded-lg text-xs font-bold transition-all" id="btn-cash">Comptant</button>
+                </div>
+            </div>
+
+            <!-- Section Revenus & Situation -->
+            <fieldset class="border border-slate-200 rounded-xl p-4 mb-4">
+                <legend class="text-xs font-bold text-slate-700 px-2">SITUATION PERSONNELLE</legend>
+                
+                <div class="space-y-3 mt-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Situation Matrimoniale</label>
+                        <select id="marital-status" class="w-full p-2 bg-slate-100 border-none rounded-lg text-sm">
+                            <option value="single">Célibataire</option>
+                            <option value="married">Marié(e)</option>
+                            <option value="pacs">PACS/Concubinage</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">Personnes à Charge</label>
+                            <input type="number" id="dependents" value="0" min="0" max="10" class="w-full p-2 bg-slate-100 border-none rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">Apporteurs Financiers</label>
+                            <input type="number" id="contributors" value="1" min="1" max="5" class="w-full p-2 bg-slate-100 border-none rounded-lg text-sm">
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+
+            <!-- Section Revenus -->
+            <fieldset class="border border-slate-200 rounded-xl p-4 mb-4">
+                <legend class="text-xs font-bold text-slate-700 px-2">REVENUS MENSUELS NET</legend>
+                
+                <div class="space-y-2 mt-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Revenu du Foyer (Ar)</label>
+                        <div class="flex gap-2">
+                            <input type="number" id="household-income" placeholder="Ex: 5 000 000" class="flex-1 p-2 bg-slate-100 border-none rounded-lg text-sm">
+                            <label class="flex items-center gap-1 cursor-pointer">
+                                <input type="checkbox" id="income-unknown" onchange="toggleIncomeMode()" class="rounded">
+                                <span class="text-[9px] font-bold text-slate-500">Inconnu</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="budget-input" class="hidden">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Budget Mensuel Max (Ar)</label>
+                        <input type="number" id="monthly-budget" placeholder="Ex: 800 000" class="w-full p-2 bg-slate-100 border-none rounded-lg text-sm">
+                    </div>
+                </div>
+            </fieldset>
+
+            <!-- Section Bien Immobilier -->
+            <fieldset class="border border-slate-200 rounded-xl p-4 mb-4">
+                <legend class="text-xs font-bold text-slate-700 px-2">BIEN IMMOBILIER</legend>
+                
+                <div class="space-y-3 mt-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Prix du Bien (Ar)</label>
+                        <input type="number" id="property-price" placeholder="Ex: 200 000 000" class="w-full p-2 bg-slate-100 border-none rounded-lg text-sm">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">Type T</label>
+                            <select id="property-type" class="w-full p-2 bg-slate-100 border-none rounded-lg text-sm">
+                                <option value="t3">T3</option>
+                                <option value="t4">T4</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">Apport Personnel (%)</label>
+                            <input type="number" id="downpayment-percent" value="10" min="0" max="80" class="w-full p-2 bg-slate-100 border-none rounded-lg text-sm">
+                        </div>
+                    </div>
+
+                    <div id="downpayment-display" class="bg-blue-50 p-3 rounded-lg border border-blue-200 text-center">
+                        <p class="text-[10px] text-slate-600 mb-1">Apport Estimé</p>
+                        <p id="downpayment-amount" class="text-lg font-bold text-blue-600">0 Ar</p>
+                    </div>
+                </div>
+            </fieldset>
+
+            <!-- Section Conditions de Financement -->
+            <fieldset id="financing-section" class="border border-slate-200 rounded-xl p-4 mb-4">
+                <legend class="text-xs font-bold text-slate-700 px-2">CONDITIONS DE FINANCEMENT</legend>
+                
+                <div class="space-y-3 mt-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Durée (Années)</label>
+                        <select id="duration" class="w-full p-2 bg-slate-100 border-none rounded-lg text-sm">
+                            <option value="5">5 ans</option>
+                            <option value="10" selected>10 ans</option>
+                            <option value="15">15 ans</option>
+                            <option value="20">20 ans</option>
+                            <option value="25">25 ans</option>
+                        </select>
+                    </div>
+
+                    <div id="rate-container">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Taux d'Intérêt (%)</label>
+                        <input type="number" id="interest-rate" value="15.5" step="0.1" min="5" max="25" class="w-full p-2 bg-slate-100 border-none rounded-lg text-sm">
+                    </div>
+
+                    <div id="rent-container" class="hidden">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Loyer Initial Mensuel (Ar)</label>
+                        <select id="initial-rent" class="w-full p-2 bg-blue-50 border border-blue-200 rounded-lg text-sm font-bold text-blue-700">
+                            <option value="900000">T3: 900 000 Ar</option>
+                            <option value="1000000">T4: 1 000 000 Ar</option>
+                        </select>
+                        <p class="text-[9px] text-slate-500 mt-1">Indexation annuelle: 7%</p>
+                    </div>
+                </div>
+            </fieldset>
+
+            <button onclick="calculate()" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-lg mb-2">
+                🔍 Calculer la Simulation
+            </button>
+
+            <button onclick="resetForm()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-2 px-4 rounded-lg transition-all">
+                ↺ Réinitialiser
+            </button>
+        </div>
+
+        <!-- Section Résultats -->
+        <div id="result-panel" class="p-8 md:w-7/12 bg-slate-900 text-white flex flex-col justify-start overflow-y-auto">
+            <div id="intro-msg" class="text-center italic text-slate-500 my-auto">
+                <svg class="w-16 h-16 mx-auto mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                Remplissez les informations pour générer l'analyse financière détaillée.
+            </div>
+
+            <div id="analysis-content" class="hidden space-y-6">
+                <!-- Status Badge & Verdict -->
+                <div class="flex flex-wrap justify-between items-start gap-4">
+                    <div id="status-badge" class="px-4 py-2 rounded-full text-[11px] font-bold tracking-widest uppercase"></div>
+                    <div id="verdict-badge" class="px-4 py-2 rounded-full text-[11px] font-bold tracking-widest uppercase"></div>
+                </div>
+
+                <!-- KPIs Principaux -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/20">
+                        <p class="text-[9px] text-emerald-400 uppercase font-bold">Capacité d'Emprunt</p>
+                        <p id="borrowing-capacity" class="text-lg font-bold text-emerald-300">0 Ar</p>
+                    </div>
+                    <div class="bg-amber-500/10 p-4 rounded-xl border border-amber-500/20">
+                        <p class="text-[9px] text-amber-400 uppercase font-bold">Coût Total Cumulé</p>
+                        <p id="total-cost" class="text-lg font-bold text-amber-300">0 Ar</p>
+                    </div>
+                    <div class="bg-blue-500/10 p-4 rounded-xl border border-blue-500/20">
+                        <p class="text-[9px] text-blue-400 uppercase font-bold">Mensualité Moyenne</p>
+                        <p id="avg-payment" class="text-lg font-bold text-blue-300">0 Ar</p>
+                    </div>
+                    <div class="bg-purple-500/10 p-4 rounded-xl border border-purple-500/20">
+                        <p class="text-[9px] text-purple-400 uppercase font-bold">% du Revenu</p>
+                        <p id="income-ratio" class="text-lg font-bold text-purple-300">0 %</p>
+                    </div>
+                </div>
+
+                <!-- Détails Paiement -->
+                <div id="payment-details" class="bg-slate-800/60 p-4 rounded-xl border border-slate-700 space-y-3">
+                    <h3 class="text-xs font-bold text-slate-300 uppercase">Détails du Paiement</h3>
+                    <div id="payment-breakdown" class="grid gap-2"></div>
+                </div>
+
+                <!-- Tableau d'Amortissement -->
+                <div class="mt-4">
+                    <button onclick="toggleTable()" class="w-full flex justify-between items-center bg-slate-800 p-4 rounded-xl hover:bg-slate-750 transition-colors border border-slate-700">
+                        <span class="text-xs font-bold text-slate-300 uppercase">📊 Calendrier de Paiement Détaillé</span>
+                        <svg id="table-toggle-icon" class="w-5 h-5 text-slate-500 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    
+                    <div id="table-content" class="hidden mt-2 bg-slate-800/40 rounded-xl border border-slate-700 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-[10px] text-left border-collapse">
+                                <thead class="bg-slate-800 text-slate-400 border-b border-slate-700 sticky top-0">
+                                    <tr id="table-header"></tr>
+                                </thead>
+                                <tbody id="table-body" class="divide-y divide-slate-700/50"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recommandations Intelligentes -->
+                <div class="bg-gradient-to-br from-slate-800 to-slate-800/60 p-5 rounded-xl border border-slate-700 border-l-4 border-l-amber-500">
+                    <p class="text-[10px] text-slate-400 uppercase font-bold mb-3">💡 Recommandations du Conseiller</p>
+                    <div id="recommendations" class="text-xs text-slate-300 leading-relaxed space-y-2"></div>
+                </div>
+
+                <!-- Avertissements -->
+                <div id="warnings-container" class="hidden bg-red-500/10 p-4 rounded-xl border border-red-500/30 border-l-4 border-l-red-500">
+                    <p class="text-[10px] text-red-400 uppercase font-bold mb-2">⚠️ Avertissements</p>
+                    <div id="warnings-list" class="text-xs text-red-300 space-y-1"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentMode = 'credit';
+        const T3_RENT = 900000;
+        const T4_RENT = 1000000;
+        const ANNUAL_INDEXATION = 0.07;
+        const STANDARD_EFFORT_RATIO = 0.35;
+
+        function formatMoney(amount) {
+            return new Intl.NumberFormat('fr-MG', { 
+                style: 'currency', 
+                currency: 'MGA', 
+                maximumFractionDigits: 0 
+            }).format(amount).replace('MGA', 'Ar');
+        }
+
+        function toggleIncomeMode() {
+            const isUnknown = document.getElementById('income-unknown').checked;
+            const incomeInput = document.getElementById('household-income');
+            const budgetInput = document.getElementById('budget-input');
+            
+            if (isUnknown) {
+                incomeInput.disabled = true;
+                incomeInput.value = '';
+                budgetInput.classList.remove('hidden');
+            } else {
+                incomeInput.disabled = false;
+                budgetInput.classList.add('hidden');
+                document.getElementById('monthly-budget').value = '';
+            }
+        }
+
+        function setPaymentMode(mode) {
+            currentMode = mode;
+            
+            document.querySelectorAll('.payment-mode-btn').forEach(btn => {
+                btn.className = 'payment-mode-btn bg-slate-300 text-slate-700 py-2 px-3 rounded-lg text-xs font-bold transition-all';
+            });
+            
+            const activeBtn = document.getElementById(`btn-${mode}`);
+            activeBtn.className = 'payment-mode-btn bg-blue-600 text-white py-2 px-3 rounded-lg text-xs font-bold transition-all';
+            
+            const rateContainer = document.getElementById('rate-container');
+            const rentContainer = document.getElementById('rent-container');
+            
+            if (mode === 'location') {
+                rateContainer.classList.add('hidden');
+                rentContainer.classList.remove('hidden');
+            } else if (mode === 'credit') {
+                rateContainer.classList.remove('hidden');
+                rentContainer.classList.add('hidden');
+            } else {
+                rateContainer.classList.add('hidden');
+                rentContainer.classList.add('hidden');
+            }
+        }
+
+        function calculateDownpayment() {
+            const price = parseFloat(document.getElementById('property-price').value) || 0;
+            const percent = parseFloat(document.getElementById('downpayment-percent').value) || 0;
+            const amount = price * (percent / 100);
+            document.getElementById('downpayment-amount').textContent = formatMoney(amount);
+        }
+
+        document.getElementById('property-price').addEventListener('input', calculateDownpayment);
+        document.getElementById('downpayment-percent').addEventListener('input', calculateDownpayment);
+
+        function toggleTable() {
+            const content = document.getElementById('table-content');
+            const icon = document.getElementById('table-toggle-icon');
+            const isHidden = content.classList.contains('hidden');
+            
+            if (isHidden) {
+                content.classList.remove('hidden');
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                content.classList.add('hidden');
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('household-income').value = '';
+            document.getElementById('monthly-budget').value = '';
+            document.getElementById('property-price').value = '';
+            document.getElementById('downpayment-percent').value = '10';
+            document.getElementById('interest-rate').value = '15.5';
+            document.getElementById('income-unknown').checked = false;
+            document.getElementById('dependents').value = '0';
+            document.getElementById('contributors').value = '1';
+            document.getElementById('marital-status').value = 'single';
+            document.getElementById('property-type').value = 't3';
+            calculateDownpayment();
+            document.getElementById('intro-msg').classList.remove('hidden');
+            document.getElementById('analysis-content').classList.add('hidden');
+        }
+
+        function calculate() {
+            const isIncomeUnknown = document.getElementById('income-unknown').checked;
+            let householdIncome = parseFloat(document.getElementById('household-income').value) || 0;
+            const monthlyBudget = parseFloat(document.getElementById('monthly-budget').value) || 0;
+            const propertyPrice = parseFloat(document.getElementById('property-price').value) || 0;
+            const downpaymentPercent = parseFloat(document.getElementById('downpayment-percent').value) || 0;
+            const durationYears = parseInt(document.getElementById('duration').value);
+            const interestRate = parseFloat(document.getElementById('interest-rate').value) / 100;
+            const propertyType = document.getElementById('property-type').value;
+            const initialRent = propertyType === 't3' ? T3_RENT : T4_RENT;
+            
+            if (propertyPrice <= 0) {
+                alert('Veuillez entrer un prix valide pour le bien');
+                return;
+            }
+
+            if (!isIncomeUnknown && householdIncome <= 0) {
+                alert('Veuillez entrer un revenu valide ou sélectionner "Inconnu"');
+                return;
+            }
+
+            if (isIncomeUnknown && monthlyBudget <= 0) {
+                alert('Veuillez entrer un budget mensuel valide');
+                return;
+            }
+
+            const downpayment = propertyPrice * (downpaymentPercent / 100);
+            const loanAmount = propertyPrice - downpayment;
+            
+            if (isIncomeUnknown) {
+                householdIncome = monthlyBudget / STANDARD_EFFORT_RATIO;
+            }
+
+            let results = {};
+            
+            if (currentMode === 'credit') {
+                results = calculateBankCredit(householdIncome, loanAmount, interestRate, durationYears, downpayment);
+            } else if (currentMode === 'location') {
+                results = calculateLocationVente(householdIncome, loanAmount, initialRent, durationYears, downpayment);
+            } else if (currentMode === 'vefa') {
+                results = calculateVEFA(householdIncome, propertyPrice, downpayment, durationYears);
+            } else if (currentMode === 'cash') {
+                results = calculateCash(householdIncome, propertyPrice);
+            }
+
+            displayResults(results, householdIncome, propertyPrice, downpayment);
+        }
+
+        function calculateBankCredit(income, loanAmount, annualRate, years, downpayment) {
+            const monthlyRate = annualRate / 12;
+            const n = years * 12;
+            const monthlyPayment = (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, n)) / 
+                                 (Math.pow(1 + monthlyRate, n) - 1);
+            
+            const effortRatio = (monthlyPayment / income) * 100;
+            const canAfford = monthlyPayment <= income * STANDARD_EFFORT_RATIO;
+            const maxBorrowable = (income * STANDARD_EFFORT_RATIO * (Math.pow(1 + monthlyRate, n) - 1)) / 
+                                (monthlyRate * Math.pow(1 + monthlyRate, n));
+
+            let tableRows = [];
+            let remainingCapital = loanAmount;
+            let totalInterest = 0;
+            let totalPaid = downpayment;
+
+            tableRows.push({
+                period: 'Signature',
+                acquisition: formatMoney(downpayment),
+                rent: '-',
+                total: formatMoney(downpayment),
+                remaining: formatMoney(remainingCapital),
+                isInitial: true
+            });
+
+            for (let year = 1; year <= years; year++) {
+                let yearlyInterest = 0;
+                let yearlyCapital = 0;
+                
+                for (let month = 1; month <= 12; month++) {
+                    const interestMonth = remainingCapital * monthlyRate;
+                    const capitalMonth = monthlyPayment - interestMonth;
+                    yearlyInterest += interestMonth;
+                    yearlyCapital += capitalMonth;
+                    remainingCapital -= capitalMonth;
+                }
+                
+                totalInterest += yearlyInterest;
+                totalPaid += monthlyPayment * 12;
+
+                tableRows.push({
+                    period: `Année ${year}`,
+                    acquisition: formatMoney(yearlyCapital),
+                    rent: formatMoney(yearlyInterest),
+                    total: formatMoney(monthlyPayment * 12),
+                    remaining: formatMoney(Math.max(0, remainingCapital)),
+                    isInitial: false
+                });
+            }
+
+            return {
+                mode: 'credit',
+                monthlyPayment: monthlyPayment,
+                totalPaid: totalPaid,
+                totalInterest: totalInterest,
+                effortRatio: effortRatio,
+                canAfford: canAfford,
+                maxBorrowable: maxBorrowable,
+                tableRows: tableRows,
+                breakdown: [
+                    { label: 'Apport Personnel', value: formatMoney(downpayment) },
+                    { label: 'Montant Emprunté', value: formatMoney(loanAmount) },
+                    { label: 'Intérêts Totaux', value: formatMoney(totalInterest) },
+                    { label: 'Mensualité Fixe', value: formatMoney(monthlyPayment) }
+                ]
+            };
+        }
+
+        function calculateLocationVente(income, loanAmount, initialRent, years, downpayment) {
+            const monthlyAmortization = loanAmount / (years * 12);
+            const effortRatio = ((monthlyAmortization + initialRent) / income) * 100;
+            const canAfford = (monthlyAmortization + initialRent) <= income * STANDARD_EFFORT_RATIO;
+            
+            let tableRows = [];
+            let remainingCapital = loanAmount;
+            let totalPaid = downpayment;
+            let currentRent = initialRent;
+
+            tableRows.push({
+                period: 'Signature',
+                acquisition: formatMoney(downpayment),
+                rent: '-',
+                total: formatMoney(downpayment),
+                remaining: formatMoney(remainingCapital),
+                isInitial: true
+            });
+
+            for (let year = 1; year <= years; year++) {
+                const yearlyAmort = monthlyAmortization * 12;
+                const yearlyRent = currentRent * 12;
+                remainingCapital -= yearlyAmort;
+                totalPaid += yearlyAmort + yearlyRent;
+
+                tableRows.push({
+                    period: `Année ${year}`,
+                    acquisition: formatMoney(monthlyAmortization),
+                    rent: formatMoney(currentRent),
+                    total: formatMoney((monthlyAmortization + currentRent) * 12),
+                    remaining: formatMoney(Math.max(0, remainingCapital)),
+                    isInitial: false
+                });
+
+                currentRent *= (1 + ANNUAL_INDEXATION);
+            }
+
+            return {
+                mode: 'location',
+                monthlyPayment: monthlyAmortization + initialRent,
+                totalPaid: totalPaid,
+                effortRatio: effortRatio,
+                canAfford: canAfford,
+                tableRows: tableRows,
+                breakdown: [
+                    { label: 'Apport Personnel', value: formatMoney(downpayment) },
+                    { label: 'Montant Financé', value: formatMoney(loanAmount) },
+                    { label: 'Amortissement Mensuel', value: formatMoney(monthlyAmortization) },
+                    { label: 'Loyer Initial (Indexation 7%/an)', value: formatMoney(initialRent) }
+                ]
+            };
+        }
+
+        function calculateVEFA(income, propertyPrice, downpayment, years) {
+            const financed = propertyPrice - downpayment;
+            const payment1 = financed * 0.40;
+            const payment2 = financed * 0.30;
+            const payment3 = financed * 0.30;
+            
+            const effortRatio = (payment1 / (years * 12) / income) * 100;
+            const canAfford = payment1 <= income * years * STANDARD_EFFORT_RATIO;
+
+            let tableRows = [];
+            tableRows.push({
+                period: 'Apport à la Signature',
+                acquisition: formatMoney(downpayment),
+                rent: '-',
+                total: formatMoney(downpayment),
+                remaining: formatMoney(financed),
+                isInitial: true
+            });
+
+            tableRows.push({
+                period: `1ère Tranche (40%) - ${Math.floor(years/3)} mois`,
+                acquisition: formatMoney(payment1),
+                rent: '-',
+                total: formatMoney(payment1),
+                remaining: formatMoney(financed - payment1),
+                isInitial: false
+            });
+
+            tableRows.push({
+                period: `2e Tranche (30%) - ${Math.floor(2*years/3)} mois`,
+                acquisition: formatMoney(payment2),
+                rent: '-',
+                total: formatMoney(payment2),
+                remaining: formatMoney(financed - payment1 - payment2),
+                isInitial: false
+            });
+
+            tableRows.push({
+                period: `3e Tranche (30%) - Livraison`,
+                acquisition: formatMoney(payment3),
+                rent: '-',
+                total: formatMoney(payment3),
+                remaining: formatMoney(0),
+                isInitial: false
+            });
+
+            return {
+                mode: 'vefa',
+                monthlyPayment: payment1 / (Math.floor(years/3) * 12),
+                totalPaid: propertyPrice,
+                effortRatio: effortRatio,
+                canAfford: canAfford,
+                tableRows: tableRows,
+                breakdown: [
+                    { label: 'Apport à la Signature', value: formatMoney(downpayment) },
+                    { label: '1ère Tranche (40%)', value: formatMoney(payment1) },
+                    { label: '2e Tranche (30%)', value: formatMoney(payment2) },
+                    { label: '3e Tranche (30%)', value: formatMoney(payment3) }
+                ]
+            };
+        }
+
+        function calculateCash(income, propertyPrice) {
+            let tableRows = [];
+            tableRows.push({
+                period: 'Paiement Comptant',
+                acquisition: formatMoney(propertyPrice),
+                rent: '-',
+                total: formatMoney(propertyPrice),
+                remaining: formatMoney(0),
+                isInitial: true
+            });
+
+            return {
+                mode: 'cash',
+                monthlyPayment: 0,
+                totalPaid: propertyPrice,
+                effortRatio: 0,
+                canAfford: true,
+                tableRows: tableRows,
+                breakdown: [
+                    { label: 'Montant Comptant', value: formatMoney(propertyPrice) },
+                    { label: 'Aucun Financement', value: 'N/A' }
+                ]
+            };
+        }
+
+        function displayResults(results, income, propertyPrice, downpayment) {
+            const statusBadge = document.getElementById('status-badge');
+            const verdictBadge = document.getElementById('verdict-badge');
+            
+            const modeLabels = {
+                'credit': 'Crédit Bancaire',
+                'location': 'Location-Vente',
+                'vefa': 'VEFA (40-30-30)',
+                'cash': 'Comptant'
+            };
+
+            statusBadge.textContent = modeLabels[results.mode];
+            statusBadge.className = 'px-4 py-2 rounded-full text-[11px] font-bold tracking-widest uppercase bg-blue-500/20 text-blue-400';
+
+            if (results.canAfford) {
+                verdictBadge.textContent = '✓ FAISABLE';
+                verdictBadge.className = 'px-4 py-2 rounded-full text-[11px] font-bold tracking-widest uppercase bg-emerald-500/20 text-emerald-400';
+            } else {
+                verdictBadge.textContent = '✗ NON FAISABLE';
+                verdictBadge.className = 'px-4 py-2 rounded-full text-[11px] font-bold tracking-widest uppercase bg-red-500/20 text-red-400';
+            }
+
+            const maxBorrowable = results.maxBorrowable || (propertyPrice - downpayment);
+            document.getElementById('borrowing-capacity').textContent = formatMoney(maxBorrowable);
+            document.getElementById('total-cost').textContent = formatMoney(results.totalPaid);
+            document.getElementById('avg-payment').textContent = formatMoney(results.monthlyPayment);
+            document.getElementById('income-ratio').textContent = results.effortRatio.toFixed(1) + '%';
+
+            const breakdownHTML = results.breakdown.map(item => 
+                `<div class="flex justify-between text-slate-400 text-xs">
+                    <span>${item.label}</span>
+                    <span class="font-bold text-white">${item.value}</span>
+                </div>`
+            ).join('');
+            document.getElementById('payment-breakdown').innerHTML = breakdownHTML;
+
+            const tableHeader = document.getElementById('table-header');
+            tableHeader.innerHTML = `
+                <th class="p-3">Période</th>
+                <th class="p-3 text-emerald-400">Acquisition</th>
+                <th class="p-3 text-blue-400">Loyer/Intérêts</th>
+                <th class="p-3 text-white">Total</th>
+                <th class="p-3 text-amber-500">Capital Restant</th>
+            `;
+
+            const tableBody = document.getElementById('table-body');
+            tableBody.innerHTML = results.tableRows.map((row) => `
+                <tr class="${row.isInitial ? 'bg-blue-500/5' : ''}">
+                    <td class="p-3 text-slate-400 font-bold text-[10px]">${row.period}</td>
+                    <td class="p-3 text-emerald-400 text-[10px]">${row.acquisition}</td>
+                    <td class="p-3 text-blue-400 text-[10px]">${row.rent}</td>
+                    <td class="p-3 text-white font-bold text-[10px]">${row.total}</td>
+                    <td class="p-3 text-amber-500 bg-amber-500/5 font-bold text-[10px]">${row.remaining}</td>
+                </tr>
+            `).join('');
+
+            const recommendations = generateRecommendations(results, income, propertyPrice);
+            const recommendationsHTML = recommendations.map(rec => 
+                `<div class="flex gap-2">
+                    <span class="text-amber-400 font-bold">•</span>
+                    <span>${rec}</span>
+                </div>`
+            ).join('');
+            document.getElementById('recommendations').innerHTML = recommendationsHTML;
+
+            const warnings = generateWarnings(results, income, propertyPrice);
+            if (warnings.length > 0) {
+                const warningsHTML = warnings.map(warn => 
+                    `<div>⚠️ ${warn}</div>`
+                ).join('');
+                document.getElementById('warnings-list').innerHTML = warningsHTML;
+                document.getElementById('warnings-container').classList.remove('hidden');
+            } else {
+                document.getElementById('warnings-container').classList.add('hidden');
+            }
+
+            document.getElementById('intro-msg').classList.add('hidden');
+            document.getElementById('analysis-content').classList.remove('hidden');
+        }
+
+        function generateRecommendations(results, income, propertyPrice) {
+            const recs = [];
+
+            if (results.mode === 'credit' && results.canAfford) {
+                recs.push('Le crédit bancaire offre une acquisition rapide avec des mensualités prévisibles.');
+                recs.push('Attention au taux de 15.5% qui est relativement élevé à Madagascar - négociez avec votre banque.');
+            }
+
+            if (results.mode === 'location' && results.canAfford) {
+                recs.push('La Location-Vente protège votre capital : vous acquérez progressivement.');
+                recs.push('L\'indexation de 7%/an augmente votre loyer, mais vous maîtrisez le rythme d\'acquisition.');
+                recs.push('Idéal si votre revenu est stable ou croissant.');
+            }
+
+            if (results.mode === 'vefa' && results.canAfford) {
+                recs.push('VEFA adapté pour les programmes neufs avec paiements échelonnés.');
+                recs.push('Système 40-30-30 : faible charge initiale, montée progressive.');
+                recs.push('Assurez-vous que le promoteur est fiable et respecte les calendriers.');
+            }
+
+            if (results.mode === 'cash' && results.canAfford) {
+                recs.push('Paiement comptant : aucun intérêt, propriété immédiate.');
+                recs.push('Vous pouvez négocier une réduction du prix avec le vendeur.');
+            }
+
+            if (!results.canAfford) {
+                recs.push('❌ Votre revenu ne couvre pas les mensualités recommandées (ratio d\'effort > 35%).');
+                recs.push('Augmentez votre apport personnel ou choisissez une propriété moins chère.');
+                recs.push('Envisagez d\'augmenter vos revenus ou d\'inclure un co-emprunteur.');
+            }
+
+            if (results.effortRatio > 40) {
+                recs.push('⚠️ Ratio d\'effort élevé (>40%) : peu de marge pour autres dépenses.');
+            }
+
+            return recs;
+        }
+
+        function generateWarnings(results, income, propertyPrice) {
+            const warns = [];
+
+            if (!results.canAfford) {
+                warns.push(`Votre ratio d'effort est de ${results.effortRatio.toFixed(1)}% (max recommandé: 35%)`);
+            }
+
+            if (results.mode === 'credit' && results.effortRatio > 35) {
+                warns.push('Les banques malgaches refusent souvent les dossiers avec un ratio > 35%');
+            }
+
+            if (results.mode === 'location' && results.effortRatio > 40) {
+                warns.push('Votre charge augmentera avec l\'indexation de 7%/an du loyer');
+            }
+
+            if (propertyPrice > income * 100) {
+                warns.push('Prix du bien très élevé par rapport à votre revenu annuel');
+            }
+
+            return warns;
+        }
+
+        setPaymentMode('credit');
+        calculateDownpayment();
+    </script>
 </body>
 </html>
+
+
